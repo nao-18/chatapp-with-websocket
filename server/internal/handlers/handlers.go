@@ -12,6 +12,7 @@ var views = jet.NewSet(
 	jet.InDevelopmentMode(),
 )
 
+// Home render the home page
 func Home(w http.ResponseWriter, r *http.Request) {
 	err := renderPage(w, "home.jet", nil)
 	if err != nil {
@@ -19,6 +20,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// renderPage renders a jet template
 func renderPage(w http.ResponseWriter, tmpl string, data jet.VarMap) error {
 	view, err := views.GetTemplate(tmpl)
 	if err != nil {
