@@ -14,18 +14,20 @@ var wsChan = make(chan WsPayload)
 
 var clients = make(map[WebSocketConnection]string)
 
+// views is the jet view set
 var views = jet.NewSet(
 	jet.NewOSFileSystemLoader("./html"),
 	jet.InDevelopmentMode(),
 )
 
+// upgradeConnection is the websocket upgrader from gorilla/websockets
 var upgradeConnection = websocket.Upgrader{
 	ReadBufferSize:  1024,
 	WriteBufferSize: 1024,
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-// Home render the home page
+// Home renders the home page
 func Home(w http.ResponseWriter, r *http.Request) {
 	err := renderPage(w, "home.jet", nil)
 	if err != nil {
@@ -45,6 +47,7 @@ type WsJsonResponse struct {
 	ConnectedUsers []string `json:"connected_users"`
 }
 
+// WsPayload defines the websocket request from the client
 type WsPayload struct {
 	Action   string              `json:"action"`
 	Username string              `json:"username"`
@@ -52,11 +55,13 @@ type WsPayload struct {
 	Conn     WebSocketConnection `json:"-"`
 }
 
+// WsEndpoint upgrades connection to websocket
 func WsEndpoint(w http.ResponseWriter, r *http.Request) {
 	ws, err := upgradeConnection.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
 	}
+
 	log.Println("Client connected to endpoint")
 
 	var response WsJsonResponse
@@ -109,16 +114,18 @@ func ListenToWsChannel() {
 			broadcastToAll(response)
 
 		case "left":
+			// handle the situation where a user leaves the page
 			response.Action = "list_users"
 			delete(clients, e.Conn)
 			users := getUserList()
 			response.ConnectedUsers = users
 			broadcastToAll(response)
-		}
 
-		// response.Action = "Got here"
-		// response.Message = fmt.Sprintf("Some message, and action was %s", e.Action)
-		// broadcastToAll(response)
+		case "broadcast":
+			response.Action = "broadcast"
+			response.Message = fmt.Sprintf("<strong>%s</strong>: %s", e.Username, e.Message)
+			broadcastToAll(response)
+		}
 	}
 }
 
@@ -137,7 +144,7 @@ func broadcastToAll(response WsJsonResponse) {
 	for client := range clients {
 		err := client.WriteJSON(response)
 		if err != nil {
-			log.Println("wesocket err")
+			log.Println("websocket err")
 			_ = client.Close()
 			delete(clients, client)
 		}
