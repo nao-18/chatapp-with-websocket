@@ -97,6 +97,7 @@
     crossorigin="anonymous"
     referrerpolicy="no-referrer"
   ></script>
+  <script src="/static/reconnecting-websocket.min.js"></script>
 
   <script>
     let socket = null;
@@ -112,7 +113,10 @@
     };
 
     document.addEventListener('DOMContentLoaded', function () {
-      socket = new WebSocket('ws://127.0.0.1:8081/ws');
+      socket = new ReconnectingWebSocket('ws://127.0.0.1:8081/ws', null, {
+        debug: true,
+        reconnectInterval: 3000,
+      });
 
       socket.onopen = () => {
         console.log('Successfully connected');
